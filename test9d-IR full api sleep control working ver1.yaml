@@ -1,0 +1,615 @@
+#  https://community.home-assistant.io/t/assign-value-to-variable/339477/6
+#
+#      GAINED THE ABILITY TO EVALUATE ON BOOT   PRIORITY 600      AND USE STRING MESSAGING
+# GOAL
+# test for api conn for X amount of time.
+# if not connected in X time, go back to sleep for ?
+# if connected, push value to HA with service OR just stay awake for ? as component will update sensor / maybe add some dumb hand shake)
+# then go back to sleep (if stay awake VAR or JUMPER are not set)
+#
+# GET THESE VALUES FROM HOME ASSISTANT FRONT END
+#  HUZZAH STAY AWAKE
+#  HUZZAH SLEEP DURATION
+#  WAIT FOR API TIMEOUT       
+
+# SEND THIS DATA BACK TO HA FRONT END - - MAY UPDATE AUTOMATICALLY ONCE CONNECTED
+#  SENSOR DATA - VOLTAGE FROM ADC         PUT SENSOR IN HA?
+#
+# SEND MORE DATA                      - - MAY UPDATE AUTOMATICALLY ONCE CONNECTED
+#  COUNT OF    - SLEEPS, DOES NOT RESET
+#  COUNT OF    - WAKE WITHOUT CONNECTION, THEN RESET (WILL OCCUR WHEN OUT OF RANGE)
+#  BATTERY CHARGE or VOLTAGE
+#
+# PRODUCTION - DEPLOYMENT
+#   REMOVE DISPLAY, UNUSED SENSORS, AND MAYBE LOGGER
+#   CREATE QUICK DISPLAY CONNETOR FOR FIELD DIAGNOSTICS   
+#
+#  esphome run test9d-IR.yaml
+#  esphome run test9d-IR.yaml --device 192.168.0.135       with password if programmed with one last
+#  esphome logs test9d-IR.yaml     # to restart log view output
+
+
+esphome:
+  name: huzzahwin9b
+  on_boot:
+    priority: 600     #  Defaults to 600 DOESN'T WAIT FOR WIFI    
+                      # -100 waits till ALL IS INITIALIZED = NO EXECUTION HERE if no WIFI
+    then:
+      - lambda: 'id(displaytext3).publish_state("boot at 600");'     #  THIS WORKS TO UPDATE OLED DISPLAY OUTPUT
+
+#      - delay: 0.5s  
+#      - delay: 5s      # priority -100         1s  api not connected       5s 10s api is connected
+#      - delay: 10s      # priority 600    8s 5s 1s  api not connected      10s     api is connected
+
+#      - globals.set:
+#          id: displaymessage
+#          value: id(displaymessage2).c_str()    #  THIS WORKS TO UPDATE OLED DISPLAY OUTPUT
+#      - lambda: 'id(displaytext).publish_state("AFTER a delay");'     #  THIS WORKS TO UPDATE OLED DISPLAY OUTPUT
+#      - delay: 0.5s  
+##      - lambda: 'id(displaytext).publish_state("wifi NO STATE");'     
+##      - lambda: 'id(displaytext2).publish_state("api NO STATE");'     
+#      - delay: 1s  
+
+      # - if:
+          # condition:          #       wifi.connected  suffers the same
+            # wifi.connected:       
+          # then:
+# #            - delay: 0.5s     
+            # - lambda: 'id(displaytext).publish_state("Wifi c0nnect");'     
+          # else:
+# #            - delay: 0.5s     
+            # - lambda: 'id(displaytext).publish_state("Wifi not c0nnect");'     
+# #            - logger.log: API is conn else!
+
+
+      # - if:
+          # condition:          #       wifi.connected  suffers the same
+            # api.connected:    #  DOES NOT EVALUATE ABOVE OR BELOW IF WIFI DISCONNECTED.  
+          # then:
+# #            - delay: 0.5s     
+            # - lambda: 'id(displaytext2).publish_state("API c0nnect");'     
+          # else:
+# #            - delay: 0.5s     
+            # - lambda: 'id(displaytext2).publish_state("API not c0nnect");'     
+# #            - logger.log: API is conn else!
+
+
+
+#      - wait_until:             # WORKS
+#          wifi.connected:  
+      
+#      - wait_until:              # WORKS
+#          condition: 
+#            and:
+#              - wifi.connected: 
+#              - api.connected: 
+
+#      - wait_until:              # WORKS
+#          condition: 
+#            wifi.connected: 
+#          timeout: 8s          # TIMEOUT WORKS
+#      - if:
+#          condition:
+#            wifi.connected:
+#          then:
+#            - lambda: 'id(displaytext).publish_state("Wifi Conn");'     
+#          else:
+#            - lambda: 'id(displaytext).publish_state("Wifi T - O");'     
+#      - lambda: 'id(displaytext3).publish_state("AFTER WIFI");'     
+
+#      - wait_until:  
+#          api.connected:           #   REMEMBER THAT  LOGGER  COUNTS AS AN API CLIENT  
+
+      # - switch.turn_on: huGPIO2       # BLUE  FOR STAY AWAKE
+      # - switch.turn_on: huGPIO0
+
+      - wait_until:  
+          condition: 
+            api.connected: 
+          timeout: !lambda return id(gd_huz_api_timeout) * 1000;              # TESTED WORKING
+#          timeout: !lambda return id(templatenumberfloat).state * 1000;      # WORKS
+#          timeout: 8s          # 8s TIMEOUT WORKS 
+
+      - lambda: 'id(displaytext).publish_state("after waituntil api");'
+      - logger.log: __________ after waituntil api __________ 
+
+ 
+#          value: !lambda 'return bool(x);'    # works  under   binary_sensor:
+
+
+#      - delay: 8s    #   STUPID DUMB FIX
+
+
+#      - globals.set:
+#          id: g_huz_stay_awake
+#          value: huz_stay_awake       # doesn't seem to work for if condition below
+          
+          
+                       
+            # DISPLAY SOME LED STATUS FOR API CONNECTED - BLINK CODE
+            # GET DATA FROM HA FRONT END   HUZZAH STAY AWAKE toggle, HUZZAH SLEEP DURATION float, HUZZAH WAIT FOR API TIMEOUT float     AND MORE ###
+            # SEND DATA TO HA FRONT END    ADC VALUE, OR DELAY TO ALLOW IT, OR MANUALLY UPDATE    TESTING AUTOMATIC  ###
+              # IF NOT TO STAY AWAKE, THEN GO BACK TO SLEEP
+              # ELSE DO NOTHING - READY FOR OTA UPDATE
+              # DISPLAY SOME LED STATUS FOR API CONNECTED - BLINK CODE 
+
+
+#            - logger.log: __________ BEFORE DELAY __________ 
+#            - delay: !lambda return id(gd_huz_adc_multiplier) * 1000;        #   MILISECONDS   3.3sec   THIS WORKS global to set delay
+#            - logger.log: __________ AFTER DELAY __________ 
+              
+               
+#            - number.set:
+#                id: templatenumberfloat
+#                value: 2
+#    
+#            - logger.log: __________ BEFORE DELAY __________ 
+#            - delay: !lambda return id(templatenumberfloat).state * 1000;      #   MILISECONDS   3.3sec   THIS WORKS number to set delay
+#            - logger.log: __________ AFTER DELAY __________ 
+            
+
+#  NUMBER SET BY GLOBAL    YES THAT WORKS
+#  UPDATE INTERVAL SET BY NUMBER     IMPOSSIBLE, NOT TEMPLATEABLE
+#  UPDATE INTERVAL SET BY NUMBER     BY GLOBAL     IMPOSSIBLE, NOT TEMPLATEABLE
+
+
+            
+
+
+              
+      - if:     #############   API CONNECTED  TEST  ############# 
+          condition:  
+            api.connected: 
+          then:                                       #API Conn
+          
+          
+            - number.set:
+                id: templatenumberfloat
+                value: 3.3
+#                value: !lambda 'return id(gd_huz_adc_multiplier);'   # GLOBAL SETS NUMBER   WORKED
+    
+            - logger.log: __________ BEFORE DELAY __________ 
+#            - delay: !lambda return id(templatenumberfloat).state * 1000;           # DELAY ASSUMES MILISECONDS   3.3sec   THIS WORKS global to set delay
+            - logger.log: __________ AFTER DELAY __________ 
+
+            - lambda: 'id(displaytext2).publish_state("Ac");'    
+            - logger.log: _____Ac_____ API Connected _____Ac_____ 
+            - logger.log: __________ Wait for updates from HA     GLOBALs product NOT ZERO test with timeout
+            - wait_until:  
+                condition: 
+                  lambda: 'return (id(g_huz_sleep_duration) * id(g_huz_api_timeout) * id(g_huz_adc_interval) * id(g_huz_adc_multiplier)) != 0;'
+                timeout: 10s         
+            - if:     #############   HA PUDATE Gvalues  TEST     ############# 
+                condition:    
+                  lambda: 'return (id(g_huz_sleep_duration) * id(g_huz_api_timeout) * id(g_huz_adc_interval) * id(g_huz_adc_multiplier)) != 0;'
+                then: 
+                  # POST ADC TO HA AND VERIFY SOMEHOME
+                  # PROCEED TO CHECK IF STAY AWAKE
+
+                  - if:     #############   STAY AWAKE  TEST     #############            ADD JUMPER BACKUP
+                      condition:                 
+                        - lambda: 'return id(huz_stay_awake).state != 1;'     #    WORKS FOR boolean toggle FRONT END
+#                        - lambda: 'return id(g_huz_stay_awake) != 1;'        #    doesn't seem to work
+                      then:
+                        - switch.turn_on: huGPIO0                   # RED  FOR GO BACK TO SLEEP
+                        - switch.turn_off: huGPIO2
+                        - logger.log: _  _  _  _  _  _  _  _  NOT EQUAL to 1   GO BACK TO SLEEP _  _  _  _  _  _  _  _ 
+                        - delay: 1s  #  ALLOW DISPLAY TIME TO UPDATE     REMOVE IN PRODUCTION
+                        - deep_sleep.enter:           #   TESTING   DEEP SLEEP
+                            id: sleepNOW
+                            sleep_duration: !lambda 'return id(g_huz_sleep_duration) * 1000 * 60;'   # *1000*60 = minutes  # 213min MAX    
+#                            sleep_duration: !lambda 'return id(gd_huz_sleep_duration) * 1000 * 60;'   # *1000*60 = minutes  # 213min MAX    
+                      else: #############  END OF   STAY AWAKE  TEST     ############# 
+                        - logger.log: _ _ _ _ _ _ _ _  EQUAL to 1   STAY AWAKE _ _ _ _ _ _ _ _ 
+                        - switch.turn_on: huGPIO2       # BLUE  FOR STAY AWAKE
+                        - switch.turn_off: huGPIO0
+                        ## 
+                        ################# THIS IS WHERE IF SCRUCTURE EXITS       NEED A WAY TO TRIGGER SLEEP, ONCE STAY AWAKE    RESET WORKS   FRONT PANEL TOGGLE WORKS
+
+                else: #############   END OF    HA PUDATE Gvalues  TEST     ############# 
+                  - lambda: 'id(displaytext).publish_state("HA UP T-O");'      
+                  - logger.log: ________ HA UPDATE Gvalues TIMEOUT 
+                  - delay: 2s
+                  # GO BACK TO SLEEP since no connection
+                  - delay: 1s  #  ALLOW DISPLAY TIME TO UPDATE     REMOVE IN PRODUCTION
+                  - deep_sleep.enter:           #   TESTING   DEEP SLEEP
+                      id: sleepNOW
+                      sleep_duration: !lambda 'return id(gd_huz_sleep_duration) * 1000 * 60;'
+
+          else: #############   END OF   API CONNECTED  TEST  ############# 
+            - lambda: 'id(displaytext2).publish_state("API T-O");'     
+            # DISPLAY SOME LED STATUS FOR API NOT CONNECTED - BLINK CODE
+            # GO BACK TO SLEEP
+            - delay: 1s  #  ALLOW DISPLAY TIME TO UPDATE     REMOVE IN PRODUCTION
+            - deep_sleep.enter:           #   TESTING   DEEP SLEEP
+                id: sleepNOW
+                sleep_duration: !lambda 'return id(gd_huz_sleep_duration) * 1000 * 60;'
+
+      - lambda: 'id(displaytext3).publish_state("After on_boot");' 
+      - logger.log: ________ ________ END OF ON_BOOT CODE ________ ________ 
+
+
+
+
+# 800.0: This is where all hardware initialization of vital components is executed. 
+#        For example setting switches to their initial state.
+# 600.0: This is where most sensors are set up.
+# 250.0: At this priority, WiFi is initialized.
+# 200.0: Network connections like MQTT/native API are set up at this priority.
+#-100.0: At this priority, pretty much everything should already be initialized.
+
+
+
+
+esp8266:
+  board: huzzah
+  restore_from_flash: false   # DEFAULT IS FALSE
+           # globals survive POWER CYCLE now too (along with SLEEP, RESTART, RESET) can't do it alone
+           # MUST use with global:  restore_value: yes/true  then survives ALL  
+
+# Enable logging                
+logger:                     # MAYBE DISABLE OR RESTRICT IN PRODUCTION
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+wifi:
+  ssid: !secret wifi_ssid2
+  password: !secret wifi_password2
+  fast_connect: on       # DON'T SCAN FIRST. JUST CONNECT
+  reboot_timeout: 200h     # ADDED FROM RAW   PREVENT TIMEOUT REBOOT IF WIFI MISSING. Defaults to 15min.
+                         # IRRELEVENT IN DEVICE THAT MOSTLY SLEEPS
+
+# Enable fallback hotspot (captive portal) in case wifi connection fails
+#  ap:
+#    ssid: "HuzzahHOT107"
+#    password: "7777777777"
+#
+#captive_portal:
+
+
+
+
+deep_sleep:
+#  run_duration: 10s
+#  sleep_duration: 20s   #10min
+  id: sleepNOW
+
+ 
+
+
+
+
+
+#substitutions:
+#  allowed_tags: '{"ABC", "CBA"}'
+
+
+globals:
+#  - id: tag_list
+#    type: std::vector<std::string>
+#    initial_value: $allowed_tags
+
+#                            REMOVE WHEN DEPLOYED
+
+
+
+
+  - id: g_huz_sleep_duration    #  
+    type: float
+#    restore_value: true        # DEFAULT IS FALSE    SURVIVES RESET, RESTART, NOT POWER CYCLE
+    initial_value: '0'
+
+  - id: g_huz_api_timeout       #  
+    type: float
+#    restore_value: true        # DEFAULT IS FALSE    SURVIVES RESET, RESTART, NOT POWER CYCLE
+    initial_value: '0'
+
+  - id: g_huz_adc_interval      #              IMPOSSIBLE TO USE     CONSTANT ONLY
+    type: float
+#    restore_value: true         # DEFAULT IS FALSE    SURVIVES RESET, RESTART, NOT POWER CYCLE
+    initial_value: '0'
+
+  - id: g_huz_adc_multiplier    #  
+    type: float
+#    restore_value: false       # DEFAULT IS FALSE    SURVIVES RESET, RESTART, NOT POWER CYCLE
+    initial_value: '0'
+ 
+  - id: g_huz_stay_awake
+    type: bool
+#    restore_value: true        # WHAT IS DEFAULT?
+#    initial_value: 'true'
+    initial_value: 'false'
+
+
+
+
+
+  - id: gd_huz_sleep_duration    #  
+    type: float
+#    restore_value: true          # DEFAULT IS FALSE    SURVIVES RESET, RESTART, NOT POWER CYCLE
+    initial_value: '0.1'   # 213 for huzzah in production      0.1 is 6 seconds
+
+  - id: gd_huz_api_timeout       #  
+    type: float
+#    restore_value: true          # DEFAULT IS FALSE    SURVIVES RESET, RESTART, NOT POWER CYCLE
+    initial_value: '25'          # TESTED AS LONG AS 15s to get values under ideal conditions. COM port LOGGER.      MAKE LONGER FOR PRODUCTION MAYBE   
+
+  - id: gd_huz_adc_interval      #              IMPOSSIBLE TO USE     CONSTANT ONLY  
+    type: float
+#    restore_value: true         # DEFAULT IS FALSE    SURVIVES RESET, RESTART, NOT POWER CYCLE
+    initial_value: '0.3'
+
+  - id: gd_huz_adc_multiplier    #  
+    type: float
+#    restore_value: false         # DEFAULT IS FALSE    SURVIVES RESET, RESTART, NOT POWER CYCLE
+    initial_value: '3.3'
+ 
+  - id: gd_huz_stay_awake
+    type: bool
+#    restore_value: true        # WHAT IS DEFAULT?
+#    initial_value: 'true'
+    initial_value: 'false'
+
+
+
+
+
+
+
+
+
+
+  - id: global1i
+    type: int
+#    restore_value: true
+    initial_value: '0'
+
+  - id: global2f
+    type: float
+#    restore_value: true
+    initial_value: '0.0'
+
+  - id: bootmsg
+    type: char[10]
+#    restore_value: true
+    initial_value: "{'b','o','o','t'}"            
+
+  - id: bootmsg2
+    type: char[10]
+#    restore_value: true
+    initial_value: "{'B','O','O','T'}"        
+
+  - id: apimsg
+    type: char[10]
+#    restore_value: true
+    initial_value: "{'a','p','i',' ','c','o','n','n'}"         
+
+  - id: wifimsg
+    type: char[10]
+#    restore_value: true
+    initial_value: "{'w','i','f','i',' ','c','o','n','n'}"        
+
+  - id: displaymessage
+    type: std::string 
+    initial_value: "{'w','i','f','i',' ','c','o','n','n'}"   
+
+  - id: displaymessage2
+    type: std::string 
+    initial_value: "{'W','I','F','I',' ','C','O','N','N'}"     # WORKS    
+#    initial_value: '{"ABC", "CBA"}'      # WORKED BUT ELONGATING ABC CRASHED HUZZAH TO SAFE MODE
+     
+
+    
+    
+    
+
+###   HiLetgo 0.96" I2C IIC SPI Serial 128X64 OLED LCD Display 4 Pin Font Color Yellow&Blue    030122 AMAZON
+i2c:                                                #  REMOVE DISPLAY IN PRODUCITON
+  sda: SDA     #  GPIO4    
+  scl: SCL     #  GPIO5    
+  scan: False  #  USE TO FIND DEVICE    TRUE IF COMMENTED OUT = SCANS
+  
+font:
+  - file: "fonts/arial.ttf"      #   
+    id: myfont14
+    size: 15                     # HOW MANY PIXELS HIGH IS THIS?
+
+
+           #  https://community.home-assistant.io/t/how-do-i-print-lambda-out-a-sensor-state/250196/3
+display:                                  #                      , id(displaymessage).c_str()
+  - platform: ssd1306_i2c                 #    , "fhck"          , id(displaymessage)
+    model: "SSD1306 128x64"
+#    reset_pin: D0
+    address: 0x3C      #    BE WARE   YOU CANNOT COMMENT BEHIND BELOW OR NEWLINE EITHER !!!!  KEEP OUT   
+#    update_interval: 1s    # NEVER USED, DOES IT WORK? WHY USE?     
+#                0 to 20 is 21    21 to 41 is 21   42 to 62 is 21    1 22 43 is down shifted by 1
+    lambda: |-
+      it.line(127, 63, 0, 63);
+      it.printf(0, 1, id(myfont14), ":%s", id(displaytext3).state.c_str());   
+      it.printf(0, 22, id(myfont14), ":%s", id(displaytext).state.c_str());   
+      it.printf(0, 43, id(myfont14), ":%s %.1f %.1f %.1f %.1f", id(displaytext2).state.c_str(), id(g_huz_sleep_duration), id(g_huz_api_timeout), id(g_huz_adc_interval), id(g_huz_adc_multiplier));   
+#      it.printf(0, 40, id(myfont14), ":%s %.1f %.1f %.1f %.1f", id(displaytext2).state.c_str(), id(huz_sleep_duration).state, id(huz_api_timeout).state, id(huz_adc_interval).state, id(huz_adc_multiplier).state);   
+#      it.printf(0, 40, id(myfont14), ":%s %.1f", id(displaytext2).state.c_str(), id(g_huz_sleep_duration) * id(g_huz_api_timeout) * id(g_huz_adc_interval) * id(g_huz_adc_multiplier));   
+#      it.printf(0, 40, id(myfont14), ":%s %.1f", id(displaytext2).state.c_str(), id(huz_adc_multiplier).state);   # DISPLAYS NAN UNTIL HA SENSOR GETS VALUE
+#      it.printf(0, 0, id(myfont14), "status: %s", id(displaymessage).c_str());                    
+#      it.printf(0, 20, id(myfont14), "global1i=%i %s", id(global1i), id(bootmsg)); 
+#      it.printf(0, 40, id(myfont14), "global2f=%.1f %s", id(global2f), id(displaytext).state.c_str());       
+#      it.printf(0, 0, id(myfont14), "ADC=%.2f V", id(adcinput).state);       
+#      it.printf(0, 0, id(myfont14), "Huzza says: %s, "fhck");                    
+#      it.printf(0, 0, id(myfont14), "status: %s %.0lf dBm", id(displaymessage), id(signalstrength).state);                    
+
+
+# SPECIFIERS     https://www.tutorialspoint.com/c_standard_library/c_function_printf.htm
+#  floating point specifiers: e, E, f, g and G
+#  integer specifiers d, i, o, u, x, X                    WHAT WORKS FOR BOOLEAN    %i SHOWS 0 AND 1    %s  CRASHED HUZZAH
+#  character string for specifiers c and s        %c DOES NOT WORK     %s works
+#
+# https://www.tutorialspoint.com/format-specifiers-in-c
+ 
+
+#                          REMOVE WHEN DEPLOYED
+text_sensor:
+  - platform: template     #  THIS WORKS TO UPDATE OLED DISPLAY OUTPUT   platform: version give DATE n TIME
+    id: displaytext        #  id(displaytext).state.c_str()      %s   to display in OLED  WORKS
+    update_interval: 1d              # 0s DOES NOT DISABLE, USE LONG TIME, HOURS OR DAYS, STOP 60s LOG SPAM
+  - platform: template     #  THIS WORKS TO UPDATE OLED DISPLAY OUTPUT
+    id: displaytext2        #  id(displaytext2).state.c_str()      %s   to display in OLED  WORKS
+    update_interval: 1d              # 0s DOES NOT DISABLE, USE LONG TIME, HOURS OR DAYS, STOP 60s LOG SPAM
+  - platform: template     #  THIS WORKS TO UPDATE OLED DISPLAY OUTPUT
+    id: displaytext3        #  id(displaytext3).state.c_str()      %s   to display in OLED  WORKS
+    update_interval: 1d              # 0s DOES NOT DISABLE, USE LONG TIME, HOURS OR DAYS, STOP 60s LOG SPAM
+   
+   
+   
+
+
+sensor:
+  - platform: adc
+    pin: A0
+    name: "huz Input Voltage"
+    id: huz_adc_input                # sensor.adc_voltage_input_2
+#    update_interval: 
+    update_interval: 0.5s  # NOT POSSIBLE TO MAKE THIS A HA VARIABLE    # CHANGE TO MAYBE 0.3s IN PRODUCTION   
+                           # NOT POSSIBLE  IF STAY AWAKE     SLOW THE UPDATE INTERVAL DOWN     ##
+    filters:
+      - lambda: return x * id(gd_huz_adc_multiplier);   #  THIS WORKS    
+#      - lambda: return x * id(g_huz_adc_multiplier);   #  THIS WORKS, BUT NEED TO HANDLE ZERO WHEN NO CONNECTION    LIVE ADJUSTMENT FROM FRONT END
+                          # check if zero,  if zero then use default OR restored in restored version
+#      - multiply: 3.3                #  MAKE THIS A HA VARIABLE, ABOVE       GLOBAL AND RESTORED HERE?
+#      - multiply: !lambda 'return float(id(templatenumberfloat).state);'    # NOT POSSIBLE          
+
+  - platform: homeassistant          #    
+    id: huz_sleep_duration           #  NEXT LINE UPDATES THIS with   
+    entity_id: input_number.hu_sleep_duration
+    on_value:
+      then:
+        - globals.set:
+            id: g_huz_sleep_duration
+            value: !lambda 'return float(x);'   
+
+  - platform: homeassistant          #  WAIT FOR API TIMEOUT - STORE THIS FOR USE ON NEXT WAKE CYCLE   
+    id: huz_api_timeout              #  NEXT LINE UPDATES THIS with   
+    entity_id: input_number.hu_api_timeout
+    on_value:
+      then:
+        - globals.set:
+            id: g_huz_api_timeout
+            value: !lambda 'return float(x);'   
+
+  - platform: homeassistant          #  TEST IF LONGER TIME MISSES VOLTAGE CHANGES - TESTING ONLY
+    id: huz_adc_interval             #  NEXT LINE UPDATES THIS with   
+    entity_id: input_number.hu_adc_interval   # UPDATE INTERVAL
+    on_value:
+      then:
+        - globals.set:
+            id: g_huz_adc_interval
+            value: !lambda 'return float(x);'   
+
+  - platform: homeassistant          #  TEST IF LONGER TIME MISSES VOLTAGE CHANGES - TESTING ONLY
+    id: huz_adc_multiplier           #  NEXT LINE UPDATES THIS with   
+    entity_id: input_number.hu_adc_multiplier
+    on_value:
+      then:
+        - globals.set:
+            id: g_huz_adc_multiplier
+            value: !lambda 'return float(x);'   
+
+binary_sensor:
+  - platform: homeassistant          #  STAY AWAKE or SLEEP *******************
+    id: huz_stay_awake               #  NEXT LINE UPDATES THIS with      1=AWAKE  0=SLEEP
+    entity_id: input_boolean.hu_stay_awake
+    on_state:     # WHEN STATE IS PUBLISHED
+      then:
+        - globals.set:
+            id: g_huz_stay_awake
+#            value: '1'
+            value: !lambda 'return bool(x);'   
+    
+    
+#      60s adc interval happens AFTER and WAY LATE
+
+##  DON'T THINK THESE ARE USED HERE
+#  - platform: status
+#    name: "api conn status"
+#    id: apiconnstatus
+# 
+#  - platform: status
+#    name: "wifi conn status"
+#    id: wificonnstatus
+  
+ 
+
+
+##        https://esphome.io/components/sensor/wifi_signal.html   
+##     type is DOUBLE %lf %.0lf %f %.0f works  USE %.0lf    WORKS TO DISPLAY
+#sensor:
+#  - platform: wifi_signal
+#    name: "WiFi Signal Sensor"
+#    id: signalstrength
+#    update_interval: 10s
+
+
+
+
+switch:
+  - platform: restart
+    name: "Restart the HUZZAH"
+    id: restarthuzzah
+  - platform: shutdown
+    name: "Shutdown the HUZZAH"
+    id: shutdownhuzzah
+
+ 
+#  OUTPUTS
+  - platform: gpio
+    name: "RED LED GPIO0 HUZZAH" 
+    pin: GPIO0               # CONTROLS RED LED. OK yes
+    inverted: yes            # initially without this line
+    id: huGPIO0
+    restore_mode: ALWAYS_ON
+    
+  - platform: gpio
+    name: "BLUE LED GPIO2 HUZZAH" 
+    pin: GPIO2               # CONTROLS BLUE LED. OK yes
+    inverted: yes            # initially without this line
+    id: huGPIO2
+    restore_mode: ALWAYS_ON
+
+
+# RESTORE_DEFAULT_OFF (Default) - Attempt to restore state and default to OFF if not possible to restore.
+# RESTORE_DEFAULT_ON            - Attempt to restore state and default to ON.
+# RESTORE_INVERTED_DEFAULT_OFF  - Attempt to restore state inverted from the previous state and default to OFF.
+# RESTORE_INVERTED_DEFAULT_ON   - Attempt to restore state inverted from the previous state and default to ON.
+# ALWAYS_OFF - Always initialize the pin as OFF on bootup.
+# ALWAYS_ON  - Always initialize the pin as ON on bootup.
+
+
+
+
+
+#      - lambda: |-
+#            ESP_LOGD("main", "____THE LAMBDA WAY TO LOG MESSAGES TO LOGGER WINDOW");  # UNRELATED
+#            ESP_LOGD("main", "Raw Value of my sensor: %f", id(distance).raw_state);   # UNRELATED
+
+
+
+
+#   128x64   draws border box          
+#      it.line(0, 0, 127, 0);
+#      it.line(127, 0, 127, 63);
+#      it.line(127, 63, 0, 63);
+#      it.line(0, 63, 0, 0);
+#   128x64   horizontal line top left to bottom right
+#      it.line(0, 0, 127, 63);
+
+number:
+  - platform: template
+    name: "TemplateNumFloat"
+    id: templatenumberfloat
+    optimistic: true
+    min_value: 0
+    max_value: 10000
+    step: 0.1
